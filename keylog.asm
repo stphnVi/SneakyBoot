@@ -1,48 +1,61 @@
 bits 16
 org 0x7c00
 
+
 _start:
+    
+    ;call clean_screen
+
     mov ah, 0x00        ; Function 00h de INT 1Ah -set video mode
     mov al, 0x13        ; grafic mode 13h (320x200 pix, 256 colors)
-    int 0x10            ; call a la BIOS
-    call random
+    int 0x10            ; call a la BIOS 
+    mov si, 0x1000      ; pos imagen
+    mov cx, 0 
+
+    call draw_pix
     
+draw_row:
+    mov dx, 0               ; X = 0 (columna)
+    
+draw_pix:
+    ; Leer un píxel de la imagen (1 byte = color)
+    mov al, [si]            ; Cargar el color del píxel
+    mov ah, 0x0C            ; Función BIOS para dibujar píxeles
+    mov bh, 0               ; Página de video (0)
+    mov bl, al              ; Color del píxel
+    mov cx, dx              ; Posición X
+    mov dx, cx              ; Posición Y
 
+    ; Llamar a la interrupción BIOS para dibujar el píxel
+    int 0x10                ; Dibujar el píxel
 
-random:
-    mov ah, 0x00        ; Function 00h -get sistem Time
-    int 0x1A            ; Call BIOS
-    mov ax, dx          ; dx use Time as seed
+    ; Incrementar la posición X y la dirección de la imagen
 
-    xor dx, dx          
-    mov cx, 180          ; max num rows (0-199)
-    div cx              ; Divide AX por 25,
-    mov [row], dx  
+    add dx, 1                  ; Moverse a la siguiente columna (pixel)
+    add si, 1                  ; Avanzar al siguiente píxel de la imagen
+    cmp dx, 320             ; if 320 pix?
+    jl draw_pix           ; seguir dibujando 
 
-    mov ax, dx        
-    xor dx, dx          
-    mov cx, 300          ; max num columns (0-319)
-    div cx              
-    mov [column], dx  
+    ; else
+    xor dx, dx              ; limpia
+    inc cx                  ; Avanzar una fila
+    cmp cx, 200             ; if 200 filas?
+    jl draw_row             ; no, seguir con la siguiente fila
+
+clean_screen:
+    mov ah, 0x0C        
+    mov al, 0x00        
+    mov cx, 0           ; initial left screeen
+    mov dx, 0           ; initial rigth screen
+    mov bx, 320*200     ; total pix
     ret
 
 wait_key:
     mov ah, 0x00    ; Read key
     int 0x16        ; Call BIOS to read the key
+    ;cmp al, 'j'     ; compare
 
-row:
-    db 0
 
-column:
-    db 0
-
-times 510 - ($ - $$) db 0
+times 510 - ($ - $$) db 0 
 dw 0xAA55              
 
-; nasm boot.asm
-; qemu-system-i386 boot
-
-; or
-
-; nasm -f bin boot.asm -o boot.bin
-; qemu-system-i386 -drive format=raw,file=boot.bin
